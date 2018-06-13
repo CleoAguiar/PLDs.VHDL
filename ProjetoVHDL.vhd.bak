@@ -1,0 +1,75 @@
+ENTITY aula8 IS
+PORT (
+lt, bi, rbi, clock_50MHz, abl :IN BIT;
+a, b, c, d, e, f, g, rbo : OUT BIT
+);
+END aula8;
+
+ARCHITECTURE vhdl OF aula8 IS
+SIGNAL 	clock_1Hz	:BIT;
+SIGNAL count : INTEGER RANGE 0 to 9;
+
+BEGIN
+divisor: PROCESS(clock_50MHz)
+VARIABLE k: INTEGER RANGE 0 TO 50000000;
+BEGIN
+IF (clock_50MHz = '1' AND clock_50MHz'EVENT) THEN
+IF k > 25000000 THEN
+clock_1Hz <= '1';
+k := k + 1;
+IF k = 50000000 THEN
+k := 0;
+END IF;
+ELSE
+k := k + 1;
+clock_1Hz <= '0';
+END IF;
+END IF;
+END PROCESS divisor;
+
+cont: PROCESS (clock_1Hz)
+BEGIN
+IF bi = '0' THEN count <= 0;
+ELSIF (clock_1Hz = '1' AND clock_1Hz'EVENT) THEN
+	IF abl = '1' THEN
+			IF (count = 9) THEN count <= 0;
+			ELSE count <= count + 1;
+			END IF;
+	END IF;
+END IF;
+	END PROCESS cont;
+
+decod: PROCESS (count)
+VARIABLE segments :BIT_VECTOR (0 TO 6);
+BEGIN
+IF bi = '0' THEN
+segments :="1111111"; rbo <= '0'; --apaga tudo
+ELSIF lt = '0' THEN
+segments := "0000000"; rbo <= '1'; --testa segmentos
+ELSIF (RBI = '0' AND count = 0) THEN
+segments := "1111111"; rbo <= '0'; -- apaga os iniciais  
+ELSE 
+rbo <='1';
+CASE count IS --display padrão anodo comum para 7 segmentos
+WHEN 0 => segments := "0000001";
+WHEN 1 => segments := "1001111";
+WHEN 2 => segments := "0010010";
+WHEN 3 => segments := "0000110";
+WHEN 4 => segments := "1001100";
+WHEN 5 => segments := "0100100";
+WHEN 6 => segments := "1100000";
+WHEN 7 => segments := "0001111";
+WHEN 8 => segments := "0000000";
+WHEN 9 => segments := "0001100";
+WHEN OTHERS => segments := "1111111";
+END CASE;
+END IF;
+a <= segments (0); --atribui bits de matriz a pinos de saída
+b <= segments (1); 
+c <= segments (2); 
+d <= segments (3); 
+e <= segments (4); 
+f <= segments (5); 
+g <= segments (6); 
+END PROCESS decod;
+END vhdl;
